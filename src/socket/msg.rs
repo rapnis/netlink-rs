@@ -146,29 +146,29 @@ pub struct NlMsgHeader {
 
 impl fmt::Debug for NlMsgHeader {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        try!(write!(f,
+        (write!(f,
                     "<NlMsgHeader len={} {:?} flags=[ ",
                     self.msg_length,
-                    MsgType::from(self.nl_type)));
+                    MsgType::from(self.nl_type)))?;
 
         // output readable flags
         if self.flags & 1 != 0 {
-            try!(write!(f, "Request "));
+            (write!(f, "Request "))?;
         }
         if self.flags & 2 != 0 {
-            try!(write!(f, "Multi "));
+            (write!(f, "Multi "))?;
         }
         if self.flags & 4 != 0 {
-            try!(write!(f, "Ack "));
+            (write!(f, "Ack "))?;
         }
         if self.flags & 8 != 0 {
-            try!(write!(f, "Echo "));
+            (write!(f, "Echo "))?;
         }
         if self.flags >> 4 != 0 {
-            try!(write!(f, "other({:#X})", self.flags));
+            (write!(f, "other({:#X})", self.flags))?;
         }
 
-        try!(write!(f, "] seq={} pid={}>", self.seq, self.pid));
+        (write!(f, "] seq={} pid={}>", self.seq, self.pid))?;
 
         Ok(())
     }
@@ -219,11 +219,11 @@ impl NlMsgHeader {
 
     pub fn from_bytes(bytes: &[u8]) -> io::Result<(NlMsgHeader, usize)> {
         let mut cursor = Cursor::new(bytes);
-        let len = try!(cursor.read_u32::<NativeEndian>());
-        let nl_type = try!(cursor.read_u16::<NativeEndian>());
-        let flags = try!(cursor.read_u16::<NativeEndian>());
-        let seq = try!(cursor.read_u32::<NativeEndian>());
-        let pid = try!(cursor.read_u32::<NativeEndian>());
+        let len = (cursor.read_u32::<NativeEndian>())?;
+        let nl_type = (cursor.read_u16::<NativeEndian>())?;
+        let flags = (cursor.read_u16::<NativeEndian>())?;
+        let seq = (cursor.read_u32::<NativeEndian>())?;
+        let pid = (cursor.read_u32::<NativeEndian>())?;
 
         if len < nlmsg_header_length() as u32 {
             Err(io::Error::new(ErrorKind::InvalidInput, "length smaller than msg header size"))

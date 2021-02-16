@@ -128,7 +128,7 @@ impl Socket {
         // This is needed to get some actual elements in the vector, not just a capacity
         a.extend(repeat(0u8).take(bytes));
 
-        let (socket_addr, received) = try!(self.recvfrom_into(&mut a[..], flags));
+        let (socket_addr, received) = (self.recvfrom_into(&mut a[..], flags))?;
 
         a.truncate(received);
         Ok((socket_addr, a.into_boxed_slice()))
@@ -155,7 +155,7 @@ impl Socket {
         // This is needed to get some actual elements in the vector, not just a capacity
         a.extend(repeat(0u8).take(bytes));
 
-        let received = try!(self.recv_into(&mut a[..], flags));
+        let received = (self.recv_into(&mut a[..], flags))?;
 
         a.truncate(received);
         Ok(a.into_boxed_slice())

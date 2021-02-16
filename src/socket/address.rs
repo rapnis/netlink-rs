@@ -41,18 +41,18 @@ impl NetlinkAddr {
 
 impl fmt::Debug for NetlinkAddr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        try!(write!(f, "<NetlinkAddr "));
+        (write!(f, "<NetlinkAddr "))?;
 
         // only report unusual values for nl_family and nl_pad
         if self.0.nl_family != AF_NETLINK as sa_family_t {
-            try!(write!(f, "[nl_family: {}]", self.0.nl_family));
+            (write!(f, "[nl_family: {}]", self.0.nl_family))?;
         }
 
         if self.0.nl_pad != 0 {
-            try!(write!(f, "[nl_pad: {}]", self.0.nl_pad));
+            (write!(f, "[nl_pad: {}]", self.0.nl_pad))?;
         }
 
-        try!(write!(f, "pid={} groups={}>", self.0.nl_pid, self.0.nl_groups));
+        (write!(f, "pid={} groups={}>", self.0.nl_pid, self.0.nl_groups))?;
 
         Ok(())
     }

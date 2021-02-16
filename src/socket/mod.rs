@@ -45,9 +45,9 @@ impl<'a> Payload<'a> {
         let mut cursor = Cursor::new(bytes);
         // the error field is of type c_int, but we lack proper ways of reading
         // that. FIXME: implement proper checks to ensure that c_int == i32
-        let err = try!(cursor.read_i32::<NativeEndian>());
+        let err = (cursor.read_i32::<NativeEndian>())?;
         let n = cursor.position() as usize;
-        let (hdr, n2) = try!(NlMsgHeader::from_bytes(&bytes[n..]));
+        let (hdr, n2) = (NlMsgHeader::from_bytes(&bytes[n..]))?;
         let num = n + n2;
         if err == 0 {
             Ok((Payload::Ack(hdr), num))
@@ -66,14 +66,14 @@ impl<'a> Payload<'a> {
             },
             Payload::Ack(h) => {
                 let mut vec = vec![];
-                try!(vec.write_u32::<NativeEndian>(0));
-                try!(vec.write(h.bytes()));
+                (vec.write_u32::<NativeEndian>(0))?;
+                (vec.write(h.bytes()))?;
                 Ok(vec)
             }
             Payload::Err(errno, h) => {
                 let mut vec = vec![];
-                try!(vec.write_i32::<NativeEndian>(errno));
-                try!(vec.write(h.bytes()));
+                (vec.write_i32::<NativeEndian>(errno))?;
+                (vec.write(h.bytes()))?;
                 Ok(vec)
             },
         }
@@ -88,7 +88,7 @@ pub struct Msg<'a> {
 
 impl<'a> Msg<'a> {
     pub fn from_bytes(bytes: &'a [u8]) -> io::Result<(Msg<'a>, usize)> {
-        let (hdr, n) = try!(NlMsgHeader::from_bytes(bytes));
+        let (hdr, n) = (NlMsgHeader::from_bytes(bytes))?;
 
         // message length is total length minus header size
         let end: usize = hdr.msg_length() as usize;
@@ -101,10 +101,10 @@ impl<'a> Msg<'a> {
 
         let (payload, n2) = match hdr.msg_type() {
             MsgType::Done => (Payload::None, 0),
-            MsgType::Error => try!(Payload::nlmsg_error(&bytes[n..end])),
+            MsgType::Error => (Payload::nlmsg_error(&bytes[n..end]))?,
             _ => {
                 let msg_len = hdr.msg_length() as usize - nlmsg_header_length();
-                try!(Payload::data(&bytes[n..], msg_len))
+                (Payload::data(&bytes[n..], msg_len))?
             }
         };
 
@@ -123,7 +123,7 @@ impl<'a> Msg<'a> {
 
     pub fn bytes(&self) -> io::Result<Vec<u8>> {
         let mut bytes: Vec<u8> = self.header.bytes().into();
-        let mut payload = try!(self.payload.bytes());
+        let mut payload = (self.payload.bytes())?;
         bytes.append(&mut payload);
         Ok(bytes)
     }
@@ -153,7 +153,7 @@ pub struct Socket {
 
 impl Socket {
     pub fn new<P: Into<i32>>(protocol: P) -> io::Result<Socket> {
-        let s = try!(SocketImpl::new(AF_NETLINK, SOCK_RAW, protocol.into()));
+        let s = (SocketImpl::new(AF_NETLINK, SOCK_RAW, protocol.into()))?;
         let bytes = 4096;
         let mut buf = Vec::with_capacity(bytes);
         buf.extend(repeat(0u8).take(bytes));
@@ -173,7 +173,7 @@ impl Socket {
 
     pub fn send<'a>(&self, message: Msg<'a>, addr: &NetlinkAddr)
         -> io::Result<usize> {
-            let b = try!(message.bytes());
+            let b = (message.bytes())?;
             self.inner.sendto(b.as_slice(), 0, &addr.as_sockaddr())
         }
 
@@ -181,7 +181,7 @@ impl Socket {
         -> io::Result<usize> {
             let mut bytes = vec![];
             for m in messages {
-                let mut b = try!(m.bytes());
+                let mut b = (m.bytes())?;
                 bytes.append(&mut b);
             }
 
@@ -190,8 +190,8 @@ impl Socket {
 
     pub fn recv(&mut self) -> io::Result<(NetlinkAddr, Vec<Msg>)> {
         let buffer = &mut self.buf[..];
-        let (saddr, _) = try!(self.inner.recvfrom_into(buffer, 0));
-        let addr = try!(sockaddr_to_netlinkaddr(&saddr));
+        let (saddr, _) = (self.inner.recvfrom_into(buffer, 0))?;
+        let addr = (sockaddr_to_netlinkaddr(&saddr))?;
         let mut messages = vec![];
 
         let mut n = 0;
